@@ -14,8 +14,15 @@ class CandidateSearchService:
     def __init__(self):
         self.client: OpenSearch = opensearch_client
         self.index_name = "candidates"
-        self.embedding_model = SentenceTransformer("paraphrase-multilingual-MiniLM-L12-v2")
+        self.embedding_model = None
+        self.embedding_model_name = "paraphrase-multilingual-MiniLM-L12-v2"
         self.embedding_dim = 384
+
+    def _get_embedding_model(self):
+        """Load embedding model lazily so API startup does not require network access."""
+        if self.embedding_model is None:
+            self.embedding_model = SentenceTransformer(self.embedding_model_name)
+        return self.embedding_model
 
     def create_index(self):
         """
@@ -90,7 +97,7 @@ class CandidateSearchService:
         Returns:
             Embedding vector
         """
-        embedding = self.embedding_model.encode(text, convert_to_numpy=True)
+        embedding = self._get_embedding_model().encode(text, convert_to_numpy=True)
         return embedding.tolist()
 
     def index_candidate(self, candidate_data: Dict[str, Any]):
@@ -293,9 +300,12 @@ class CandidateSearchService:
         Returns:
             List of search results with combined scores
         """
-        # Get results from both methods
         bm25_results = self.bm25_search(query, filters, size * 2)
-        vector_results = self.vector_search(query, filters, size * 2)
+        try:
+            vector_results = self.vector_search(query, filters, size * 2)
+        except Exception as exc:
+            print(f"Vector search unavailable, falling back to BM25: {exc}")
+            vector_results = []
 
         # Normalize scores
         def normalize_scores(results):

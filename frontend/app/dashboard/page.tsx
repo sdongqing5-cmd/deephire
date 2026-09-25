@@ -21,6 +21,9 @@ export default function DashboardPage() {
         case 'interviewer':
           router.replace('/dashboard/interviewer');
           break;
+        case 'platform_admin':
+          router.replace('/platform-admin');
+          break;
         default:
           router.replace('/dashboard/hr');
       }

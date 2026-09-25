@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, FileText, User, Briefcase, Clock, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -47,12 +47,7 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
   const [application, setApplication] = useState<ApplicationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
-
-  useEffect(() => {
-    fetchApplication();
-  }, [params.id]);
-
-  const fetchApplication = async () => {
+  const fetchApplication = useCallback(async () => {
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/v1/application-actions/${params.id}`
@@ -66,7 +61,12 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchApplication();
+  }, [fetchApplication]);
 
   const handlePass = async () => {
     if (!confirm('确认通过该候选人并进入下一阶段？')) return;
@@ -89,7 +89,7 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
         const error = await response.json();
         alert(`操作失败: ${error.detail}`);
       }
-    } catch (error) {
+    } catch {
       alert('操作失败');
     } finally {
       setActionLoading(false);
@@ -118,7 +118,7 @@ export default function ApplicationDetailPage({ params }: { params: { id: string
         const error = await response.json();
         alert(`操作失败: ${error.detail}`);
       }
-    } catch (error) {
+    } catch {
       alert('操作失败');
     } finally {
       setActionLoading(false);

@@ -27,8 +27,15 @@
   },
   "jobs": {
     "seniorFrontendEngineer": "高级前端工程师",
+    "seniorBackendEngineer": "高级后端开发工程师",
+    "robotAgentEngineer": "机器人 Agent 开发工程师",
+    "algorithmEngineer": "算法工程师",
+    "frontendEngineer": "前端开发工程师",
     "backendEngineer": "后端工程师",
-    "productManager": "产品经理"
+    "productManager": "产品经理",
+    "cloudArchitect": "云平台架构师",
+    "devopsEngineer": "DevOps 工程师",
+    "dataAnalyst": "数据分析师"
   },
   "interviewTypes": {
     "phone-screen": "电话筛选",
@@ -65,12 +72,14 @@
     "demoAccounts": "测试账号：",
     "hr": "人力资源",
     "recruiter": "招聘专员",
-    "interviewer": "面试官"
+    "interviewer": "面试官",
+    "platformAdmin": "平台管理员"
   },
   "roles": {
     "hr": "人力资源",
     "recruiter": "招聘专员",
     "interviewer": "面试官",
+    "platformAdmin": "平台管理员",
     "admin": "管理员",
     "headhunter": "猎头"
   },
@@ -79,9 +88,14 @@
     "positions": "职位",
     "candidates": "候选人",
     "interviews": "面试",
+    "offers": "Offer",
+    "onboarding": "入职",
+    "notifications": "通知管理",
+    "headhunterManagement": "猎头管理",
     "schedule": "日程",
     "evaluations": "评估",
-    "search": "搜索"
+    "search": "搜索",
+    "platformAdmin": "平台管理"
   },
   "dashboard": {
     "hrDashboard": "人力资源仪表板",
@@ -94,7 +108,7 @@
     "totalCandidates": "候选人总数",
     "activeJobs": "活跃职位",
     "interviewsToday": "今日面试",
-    "pendingReviews": "待审核",
+    "pendingReviews": "待查看",
     "myCandidates": "我的候选人",
     "interviewsScheduled": "已安排面试",
     "pendingActions": "待处理事项",
@@ -107,7 +121,44 @@
     "scheduleInterview": "安排面试",
     "recentActivities": "最近活动",
     "noInterviewsToday": "今天没有安排面试",
-    "noInterviewsDescription": "您已完成所有任务！稍后再来查看或安排新的面试。"
+    "noInterviewsDescription": "您已完成所有任务！稍后再来查看或安排新的面试。",
+    "interviewerWorkspace": {
+      "title": "面试官工作台",
+      "description": "先看概览，再进入筛选工作台。筛选通过后进入意向沟通，筛选未通过则反馈 HR。",
+      "candidatesTitle": "候选人",
+      "candidatesDescription": "查看 HR 推送的候选人简历，并提交筛选结果。",
+      "pendingResumes": "待筛选简历",
+      "instructions": "操作说明",
+      "instructionsBody": "在“筛选工作台”里直接查看原始简历，点击通过或淘汰后回传 HR。",
+      "pendingCount": "待筛选 {count}",
+      "pendingSection": "待筛选 ({count})",
+      "screenedSection": "已筛选 ({count})",
+      "candidateEvaluation": "候选人评价",
+      "evaluationLabel": "评价",
+      "evaluationPlaceholder": "请输入对候选人的评价",
+      "cancel": "取消",
+      "saving": "保存中...",
+      "saveEvaluation": "保存评价",
+      "noPendingResumes": "暂无待筛选候选人",
+      "noPendingResumesHint": "HR 推送新的候选人后会显示在这里。",
+      "noScreenedResumes": "暂无已筛选候选人",
+      "noScreenedResumesHint": "完成筛选的候选人会显示在这里。",
+      "passScreening": "筛选通过",
+      "rejectScreening": "筛选未通过",
+      "loading": "加载中...",
+      "noHrResumes": "暂无 HR 推送的简历",
+      "noHrResumesHint": "HR 推送后的候选人会显示在这里。",
+      "appliedJob": "应聘职位：{title}",
+      "positionUnknown": "职位未知",
+      "yearsExperienceText": "{years} 年经验",
+      "viewResume": "查看简历",
+      "actionFailedWithDetail": "操作失败: {detail}",
+      "actionFailedRetry": "操作失败，请稍后重试",
+      "unknownError": "未知错误",
+      "statusSentToInterviewer": "待筛选",
+      "statusInterviewIntentionCommunication": "意向沟通中",
+      "statusInterviewerRejected": "面试官筛选未通过"
+    }
   },
   "headhunter": {
     "clients": "客户公司",

@@ -3,7 +3,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/auth-store';
-import { canAccessRoute } from '@/lib/auth';
+import { canAccessRoute, getDashboardPath } from '@/lib/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -25,8 +25,7 @@ export function ProtectedRoute({ children, requiredPath }: ProtectedRouteProps) 
     }
 
     if (requiredPath && !canAccessRoute(user, requiredPath)) {
-      // Redirect to user's dashboard if they don't have access
-      router.push('/login');
+      router.push(getDashboardPath(user!.role));
     }
   }, [hasHydrated, isAuthenticated, user, requiredPath, router]);
 

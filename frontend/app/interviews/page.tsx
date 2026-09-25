@@ -1,12 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Calendar, Clock, MapPin, Video, User, Plus } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Bell, Calendar, Clock, MapPin, MessageSquareWarning, Plus, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useAuthStore } from '@/stores/auth-store';
+import { MainLayout } from '@/components/layout/main-layout';
 
 interface Interview {
   id: string;
@@ -48,17 +51,17 @@ const resultLabels: Record<string, { label: string; color: string }> = {
 
 export default function InterviewsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const user = useAuthStore((state) => state.user);
   const [todayInterviews, setTodayInterviews] = useState<Interview[]>([]);
   const [upcomingInterviews, setUpcomingInterviews] = useState<Interview[]>([]);
   const [allInterviews, setAllInterviews] = useState<Interview[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('today');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const activeTab = searchParams.get('tab') || 'today';
+  const resultFilter = searchParams.get('result');
 
-  useEffect(() => {
-    fetchInterviews();
-  }, [activeTab]);
-
-  const fetchInterviews = async () => {
+  const fetchInterviews = useCallback(async () => {
     setLoading(true);
     try {
       if (activeTab === 'today') {
@@ -78,8 +81,16 @@ export default function InterviewsPage() {
           setUpcomingInterviews(result.data || []);
         }
       } else {
+        const params = new URLSearchParams({ limit: '50' });
+        if (user?.role === 'interviewer' && user.id) {
+          params.set('interviewer_id', user.id);
+        }
+        if (resultFilter) {
+          params.set('result', resultFilter);
+        }
+
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/interview-management?limit=50`
+          `${process.env.NEXT_PUBLIC_API_URL}/api/v1/interview-management?${params.toString()}`
         );
         if (response.ok) {
           const result = await response.json();
@@ -91,6 +102,58 @@ export default function InterviewsPage() {
     } finally {
       setLoading(false);
     }
+  }, [activeTab, resultFilter, user]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchInterviews();
+    setSelectedIds([]);
+  }, [fetchInterviews]);
+
+  const toggleSelected = (interviewId: string) => {
+    setSelectedIds((current) =>
+      current.includes(interviewId)
+        ? current.filter((id) => id !== interviewId)
+        : [...current, interviewId]
+    );
+  };
+
+  const runBatchAction = async (action: 'notify' | 'urge-candidate' | 'urge-interviewer') => {
+    if (selectedIds.length === 0) {
+      alert('请先选择面试安排');
+      return;
+    }
+
+    const endpoint = action === 'notify' ? 'batch-notify' : 'batch-urge';
+    const body =
+      action === 'notify'
+        ? { interview_ids: selectedIds }
+        : {
+            interview_ids: selectedIds,
+            target: action === 'urge-candidate' ? 'candidate' : 'interviewer',
+          };
+
+    try {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/interview-management/${endpoint}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        }
+      );
+
+      if (response.ok) {
+        alert('操作成功');
+        await fetchInterviews();
+        setSelectedIds([]);
+      } else {
+        const error = await response.json();
+        alert(`操作失败: ${error.detail || '未知错误'}`);
+      }
+    } catch {
+      alert('操作失败，请稍后重试');
+    }
   };
 
   const renderInterviewCard = (interview: Interview) => (
@@ -100,6 +163,18 @@ export default function InterviewsPage() {
       onClick={() => router.push(`/interviews/${interview.id}`)}
     >
       <div className="flex items-start justify-between mb-4">
+        <div
+          className="mr-3 pt-1"
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+        >
+          <Checkbox
+            checked={selectedIds.includes(interview.id)}
+            onCheckedChange={() => toggleSelected(interview.id)}
+            aria-label={`选择${interview.candidate_name}的面试`}
+          />
+        </div>
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -159,10 +234,19 @@ export default function InterviewsPage() {
   );
 
   return (
+    <MainLayout requiredPath="/interviews">
     <div className="p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/dashboard')}
+            className="mb-4 -ml-2 gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            返回首页
+          </Button>
           <h1 className="text-3xl font-bold text-gray-900">面试管理</h1>
           <p className="text-gray-600 mt-2">管理面试安排和面试评价</p>
         </div>
@@ -173,12 +257,38 @@ export default function InterviewsPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="today">今日面试</TabsTrigger>
-          <TabsTrigger value="upcoming">未来7天</TabsTrigger>
-          <TabsTrigger value="all">全部面试</TabsTrigger>
-        </TabsList>
+      <Tabs
+        value={activeTab}
+        onValueChange={(value) => {
+          const params = new URLSearchParams(searchParams.toString());
+          params.set('tab', value);
+          if (value !== 'all') {
+            params.delete('result');
+          }
+          router.push(`/interviews?${params.toString()}`);
+        }}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <TabsList>
+            <TabsTrigger value="today">今日面试</TabsTrigger>
+            <TabsTrigger value="upcoming">未来7天</TabsTrigger>
+            <TabsTrigger value="all">全部面试</TabsTrigger>
+          </TabsList>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" disabled={selectedIds.length === 0} onClick={() => runBatchAction('notify')} className="gap-2">
+              <Bell className="h-4 w-4" />
+              通知双方
+            </Button>
+            <Button variant="outline" disabled={selectedIds.length === 0} onClick={() => runBatchAction('urge-candidate')} className="gap-2">
+              <MessageSquareWarning className="h-4 w-4" />
+              催促答复
+            </Button>
+            <Button variant="outline" disabled={selectedIds.length === 0} onClick={() => runBatchAction('urge-interviewer')} className="gap-2">
+              <MessageSquareWarning className="h-4 w-4" />
+              催促反馈
+            </Button>
+          </div>
+        </div>
 
         <TabsContent value="today" className="mt-6">
           {loading ? (
@@ -244,5 +354,6 @@ export default function InterviewsPage() {
         </TabsContent>
       </Tabs>
     </div>
+    </MainLayout>
   );
 }

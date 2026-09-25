@@ -2,11 +2,17 @@
 
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, Form
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
+import re
 
 from app.db.database import get_db
 from app.models.candidate import Candidate
 from app.models.application import Application, ApplicationStatus, ApplicationStatusHistory
+from app.models.assessment import Assessment
+from app.models.interview import Interview
+from app.models.interviewer_screening import InterviewerScreening
+from app.models.scorecard import Scorecard
 from app.services.candidate_service import CandidateService
 from app.services.resume_parser import PLACEHOLDER_VALUES, resume_parser
 from app.services.job_service import JobService
@@ -43,9 +49,11 @@ def normalize_optional_text(value: Optional[str]) -> Optional[str]:
 
 def normalize_optional_email(value: Optional[str]) -> Optional[str]:
     normalized = normalize_optional_text(value)
-    if not normalized or "@" not in normalized:
+    if not normalized:
         return None
-    return normalized
+
+    match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)+", normalized)
+    return match.group(0) if match else None
 
 
 def normalize_optional_int(value) -> Optional[int]:
@@ -266,13 +274,37 @@ async def delete_candidate(
     candidate_id: str,
     db: Session = Depends(get_db),
 ):
-    """删除候选人，以及该候选人的所有应聘记录和状态历史。"""
+    """删除候选人，以及该候选人的所有简历、应聘、筛选和面试记录。"""
     candidate = CandidateService.get_by_id(db, candidate_id)
     if not candidate:
         raise HTTPException(status_code=404, detail="候选人不存在")
 
     applications = db.query(Application).filter(Application.candidate_id == candidate_id).all()
     application_ids = [application.id for application in applications]
+
+    interview_filters = [Interview.candidate_id == candidate_id]
+    if application_ids:
+        interview_filters.append(Interview.application_id.in_(application_ids))
+    interviews_query = db.query(Interview).filter(or_(*interview_filters))
+    interview_ids = [interview.id for interview in interviews_query.all()]
+
+    if interview_ids:
+        db.query(Scorecard).filter(
+            Scorecard.interview_id.in_(interview_ids)
+        ).delete(synchronize_session=False)
+
+    if application_ids:
+        db.query(InterviewerScreening).filter(
+            InterviewerScreening.application_id.in_(application_ids)
+        ).delete(synchronize_session=False)
+        db.query(Assessment).filter(
+            Assessment.application_id.in_(application_ids)
+        ).delete(synchronize_session=False)
+
+    db.query(Assessment).filter(
+        Assessment.candidate_id == candidate_id
+    ).delete(synchronize_session=False)
+    db.query(Interview).filter(or_(*interview_filters)).delete(synchronize_session=False)
 
     if application_ids:
         db.query(ApplicationStatusHistory).filter(

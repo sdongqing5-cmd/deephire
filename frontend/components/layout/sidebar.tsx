@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuthStore } from '@/stores/auth-store';
 import { cn } from '@/lib/utils';
@@ -10,8 +10,13 @@ import {
   Users,
   Briefcase,
   Calendar,
+  FileCheck2,
+  Mail,
   Search,
   Settings,
+  UserRoundSearch,
+  UserCheck,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface NavItem {
@@ -22,6 +27,12 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  {
+    labelKey: 'nav.platformAdmin',
+    href: '/platform-admin',
+    icon: ShieldCheck,
+    roles: ['platform_admin'],
+  },
   {
     labelKey: 'nav.dashboard',
     href: '/dashboard',
@@ -34,6 +45,12 @@ const navItems: NavItem[] = [
     roles: ['hr', 'recruiter'],
   },
   {
+    labelKey: 'nav.candidates',
+    href: '/dashboard/interviewer?tab=screening',
+    icon: Users,
+    roles: ['interviewer'],
+  },
+  {
     labelKey: 'nav.positions',
     href: '/jobs',
     icon: Briefcase,
@@ -43,6 +60,30 @@ const navItems: NavItem[] = [
     labelKey: 'nav.interviews',
     href: '/interviews',
     icon: Calendar,
+  },
+  {
+    labelKey: 'nav.offers',
+    href: '/offers',
+    icon: FileCheck2,
+    roles: ['hr', 'recruiter'],
+  },
+  {
+    labelKey: 'nav.onboarding',
+    href: '/onboarding',
+    icon: UserCheck,
+    roles: ['hr', 'recruiter'],
+  },
+  {
+    labelKey: 'nav.notifications',
+    href: '/notifications',
+    icon: Mail,
+    roles: ['hr', 'recruiter'],
+  },
+  {
+    labelKey: 'nav.headhunterManagement',
+    href: '/headhunter-management',
+    icon: UserRoundSearch,
+    roles: ['hr'],
   },
   {
     labelKey: 'nav.search',
@@ -59,6 +100,7 @@ const navItems: NavItem[] = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const t = useTranslations();
   const user = useAuthStore((state) => state.user);
 
@@ -76,7 +118,14 @@ export function Sidebar() {
       <nav className="flex-1 px-4 space-y-1">
         {filteredNavItems.map((item) => {
           const Icon = item.icon;
-          const isActive = pathname.startsWith(item.href);
+          const [itemPath, itemQuery] = item.href.split('?');
+          const itemParams = new URLSearchParams(itemQuery || '');
+          const isQueryActive = Array.from(itemParams.entries()).every(
+            ([key, value]) => searchParams.get(key) === value
+          );
+          const isActive =
+            pathname === itemPath &&
+            (!itemQuery || isQueryActive);
 
           return (
             <Link

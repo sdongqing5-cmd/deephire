@@ -7,14 +7,36 @@ from datetime import datetime, timedelta
 import uuid
 
 from app.models.interview import Interview, InterviewType, InterviewStatus, InterviewResult
-from app.models.application import Application
+from app.models.application import Application, ApplicationStatus
 from app.models.candidate import Candidate
 from app.models.job import Job
 from app.schemas.interview import InterviewCreate, InterviewUpdate, InterviewEvaluation
+from app.services.application_service import ApplicationService
 
 
 class InterviewService:
     """面试服务"""
+
+    INTERVIEW_VISIBLE_APPLICATION_STATUSES = (
+        ApplicationStatus.HR_INTERVIEW_SCHEDULED,
+        ApplicationStatus.HR_INTERVIEWING,
+        ApplicationStatus.HR_INTERVIEW_COMPLETED,
+        ApplicationStatus.HR_INTERVIEW_REJECTED,
+        ApplicationStatus.DEPARTMENT_INTERVIEW_SCHEDULED,
+        ApplicationStatus.DEPARTMENT_INTERVIEWING,
+        ApplicationStatus.DEPARTMENT_INTERVIEW_HOLD,
+        ApplicationStatus.DEPARTMENT_INTERVIEW_COMPLETED,
+        ApplicationStatus.DEPARTMENT_INTERVIEW_REJECTED,
+        ApplicationStatus.HR_REINTERVIEW_SCHEDULED,
+        ApplicationStatus.HR_REINTERVIEWING,
+        ApplicationStatus.HR_REINTERVIEW_COMPLETED,
+        ApplicationStatus.HR_REINTERVIEW_REJECTED,
+        ApplicationStatus.FINAL_INTERVIEW_SCHEDULED,
+        ApplicationStatus.FINAL_INTERVIEWING,
+        ApplicationStatus.FINAL_INTERVIEW_COMPLETED,
+        ApplicationStatus.FINAL_INTERVIEW_REJECTED,
+        ApplicationStatus.CANDIDATE_DECLINED_INTERVIEW,
+    )
 
     @staticmethod
     def create(db: Session, interview_data: InterviewCreate) -> Interview:
@@ -30,6 +52,7 @@ class InterviewService:
             title=interview_data.title,
             interviewer_id=interview_data.interviewer_id,
             interviewer_name=interview_data.interviewer_name,
+            scorecard_template_id=interview_data.scorecard_template_id,
             scheduled_at=interview_data.scheduled_at,
             duration=interview_data.duration,
             location=interview_data.location,
@@ -41,6 +64,49 @@ class InterviewService:
         db.add(interview)
         db.commit()
         db.refresh(interview)
+
+        return interview
+
+    @staticmethod
+    async def schedule_with_status_update(
+        db: Session,
+        interview_data: InterviewCreate,
+        operator_id: str,
+        operator_name: str,
+    ) -> Interview:
+        """创建面试并同步应聘记录状态。"""
+        interview = InterviewService.create(db, interview_data)
+
+        scheduled_status_by_type = {
+            InterviewType.HR_INITIAL: ApplicationStatus.HR_INTERVIEW_SCHEDULED,
+            InterviewType.DEPARTMENT: ApplicationStatus.DEPARTMENT_INTERVIEW_SCHEDULED,
+            InterviewType.HR_REINTERVIEW: ApplicationStatus.HR_REINTERVIEW_SCHEDULED,
+            InterviewType.FINAL: ApplicationStatus.FINAL_INTERVIEW_SCHEDULED,
+        }
+        target_status = scheduled_status_by_type.get(interview.interview_type)
+        if target_status:
+            application = db.query(Application).filter(Application.id == interview.application_id).first()
+            if not application:
+                db.delete(interview)
+                db.commit()
+                raise ValueError("关联的应聘记录不存在，无法安排面试")
+
+            if application.status != target_status:
+                try:
+                    await ApplicationService.transition_status(
+                        db=db,
+                        application_id=interview.application_id,
+                        to_status=target_status,
+                        operator_id=operator_id,
+                        operator_name=operator_name,
+                        reason=f"安排面试：{interview.title or interview.interview_type.value}",
+                    )
+                except ValueError as exc:
+                    db.delete(interview)
+                    db.commit()
+                    raise ValueError(
+                        f"当前候选人尚未进入可安排该面试的阶段: {exc}"
+                    ) from exc
 
         return interview
 
@@ -59,6 +125,7 @@ class InterviewService:
         job_id: Optional[str] = None,
         application_id: Optional[str] = None,
         status: Optional[InterviewStatus] = None,
+        result: Optional[InterviewResult] = None,
         interview_type: Optional[InterviewType] = None,
         date_from: Optional[datetime] = None,
         date_to: Optional[datetime] = None,
@@ -74,6 +141,12 @@ class InterviewService:
             Candidate, Interview.candidate_id == Candidate.id
         ).join(
             Job, Interview.job_id == Job.id
+        ).join(
+            Application, Interview.application_id == Application.id
+        )
+
+        query = query.filter(
+            Application.status.in_(InterviewService.INTERVIEW_VISIBLE_APPLICATION_STATUSES)
         )
 
         # 过滤条件
@@ -87,6 +160,8 @@ class InterviewService:
             query = query.filter(Interview.application_id == application_id)
         if status:
             query = query.filter(Interview.status == status)
+        if result:
+            query = query.filter(Interview.result == result)
         if interview_type:
             query = query.filter(Interview.interview_type == interview_type)
         if date_from:
@@ -196,10 +271,12 @@ class InterviewService:
         return interview
 
     @staticmethod
-    def submit_evaluation(
+    async def submit_evaluation(
         db: Session,
         interview_id: str,
-        evaluation: InterviewEvaluation
+        evaluation: InterviewEvaluation,
+        operator_id: str = "3",
+        operator_name: str = "Interviewer",
     ) -> Optional[Interview]:
         """提交面试评价"""
         interview = db.query(Interview).filter(Interview.id == interview_id).first()
@@ -215,6 +292,47 @@ class InterviewService:
 
         db.commit()
         db.refresh(interview)
+
+        if interview.interview_type == InterviewType.DEPARTMENT:
+            application = db.query(Application).filter(
+                Application.id == interview.application_id
+            ).first()
+            if application:
+                if (
+                    application.status == ApplicationStatus.DEPARTMENT_INTERVIEW_SCHEDULED
+                    and evaluation.result == InterviewResult.PASS
+                ):
+                    await ApplicationService.transition_status(
+                        db=db,
+                        application_id=application.id,
+                        to_status=ApplicationStatus.DEPARTMENT_INTERVIEWING,
+                        operator_id=operator_id,
+                        operator_name=operator_name,
+                        reason="提交部门面试评价时自动进入面试中",
+                    )
+                    db.refresh(application)
+
+                target_status = None
+                reason = None
+                if evaluation.result == InterviewResult.PASS:
+                    target_status = ApplicationStatus.DEPARTMENT_INTERVIEW_COMPLETED
+                    reason = "部门面试通过"
+                elif evaluation.result == InterviewResult.FAIL:
+                    target_status = ApplicationStatus.DEPARTMENT_INTERVIEW_REJECTED
+                    reason = "部门面试未通过"
+                elif evaluation.result == InterviewResult.HOLD:
+                    target_status = ApplicationStatus.DEPARTMENT_INTERVIEW_HOLD
+                    reason = "部门面试待定"
+
+                if target_status and application.status != target_status:
+                    await ApplicationService.transition_status(
+                        db=db,
+                        application_id=application.id,
+                        to_status=target_status,
+                        operator_id=operator_id,
+                        operator_name=operator_name,
+                        reason=reason,
+                    )
 
         return interview
 
@@ -244,6 +362,7 @@ class InterviewService:
                 "title": interview.title,
                 "interviewer_id": interview.interviewer_id,
                 "interviewer_name": interview.interviewer_name,
+                "scorecard_template_id": interview.scorecard_template_id,
                 "scheduled_at": interview.scheduled_at.isoformat(),
                 "duration": interview.duration,
                 "location": interview.location,
@@ -288,3 +407,65 @@ class InterviewService:
         db.refresh(interview)
 
         return interview
+
+    @staticmethod
+    def mark_candidate_reply(
+        db: Session,
+        interview_id: str,
+        accepted: bool,
+    ) -> Optional[Interview]:
+        """记录候选人是否参加面试。"""
+        interview = db.query(Interview).filter(Interview.id == interview_id).first()
+        if not interview:
+            return None
+
+        interview.status = InterviewStatus.CONFIRMED if accepted else InterviewStatus.DECLINED
+        if accepted:
+            interview.candidate_confirmed_at = datetime.now()
+
+        application = db.query(Application).filter(Application.id == interview.application_id).first()
+        if application:
+            if accepted:
+                interviewing_status_by_type = {
+                    InterviewType.HR_INITIAL: ApplicationStatus.HR_INTERVIEWING,
+                    InterviewType.DEPARTMENT: ApplicationStatus.DEPARTMENT_INTERVIEWING,
+                    InterviewType.HR_REINTERVIEW: ApplicationStatus.HR_REINTERVIEWING,
+                    InterviewType.FINAL: ApplicationStatus.FINAL_INTERVIEWING,
+                }
+                target_status = interviewing_status_by_type.get(interview.interview_type)
+            else:
+                target_status = ApplicationStatus.CANDIDATE_DECLINED_INTERVIEW
+
+            if target_status:
+                application.status = target_status
+                application.last_status_change_at = datetime.now()
+
+        db.commit()
+        db.refresh(interview)
+        return interview
+
+    @staticmethod
+    def send_notifications(db: Session, interview_ids: list[str]) -> list[str]:
+        """标记已通知候选人和面试官。"""
+        interviews = db.query(Interview).filter(Interview.id.in_(interview_ids)).all()
+        notified = []
+        for interview in interviews:
+            interview.notification_sent_to_candidate = True
+            interview.notification_sent_to_interviewer = True
+            notified.append(interview.id)
+
+        db.commit()
+        return notified
+
+    @staticmethod
+    def urge_reply(db: Session, interview_ids: list[str], target: str) -> list[str]:
+        """催促候选人答复或面试官反馈。"""
+        interviews = db.query(Interview).filter(Interview.id.in_(interview_ids)).all()
+        urged = []
+        for interview in interviews:
+            prefix = "催促候选人答复" if target == "candidate" else "催促面试官反馈"
+            interview.feedback = f"{prefix}。{interview.feedback or ''}".strip()
+            urged.append(interview.id)
+
+        db.commit()
+        return urged

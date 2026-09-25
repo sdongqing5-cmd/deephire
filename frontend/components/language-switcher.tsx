@@ -3,46 +3,41 @@
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Languages } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useSyncExternalStore } from 'react';
 
 const languages = [
   { code: 'en', name: 'English' },
   { code: 'zh', name: '中文' },
 ];
 
+function getLocaleFromCookie() {
+  if (typeof document === 'undefined') return 'en';
+
+  const cookieLocale = document.cookie
+      .split('; ')
+      .find((row) => row.startsWith('locale='))
+      ?.split('=')[1];
+
+  return cookieLocale === 'zh' ? 'zh' : 'en';
+}
+
+function subscribeToLocaleChange(callback: () => void) {
+  window.addEventListener('localechange', callback);
+  return () => window.removeEventListener('localechange', callback);
+}
+
 export function LanguageSwitcher() {
   const router = useRouter();
-  const [currentLocale, setCurrentLocale] = useState('en');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const locale =
-      document.cookie
-        .split('; ')
-        .find((row) => row.startsWith('locale='))
-        ?.split('=')[1] || 'en';
-    setCurrentLocale(locale);
-  }, []);
+  const currentLocale = useSyncExternalStore(subscribeToLocaleChange, getLocaleFromCookie, () => 'en');
 
   const handleLanguageToggle = () => {
     const newLocale = currentLocale === 'en' ? 'zh' : 'en';
     document.cookie = `locale=${newLocale}; path=/; max-age=31536000`;
-    setCurrentLocale(newLocale);
+    window.dispatchEvent(new Event('localechange'));
     router.refresh();
   };
 
   const currentLanguage = languages.find((lang) => lang.code === currentLocale);
-
-  // 避免水合错误，在客户端挂载前不显示语言名称
-  if (!mounted) {
-    return (
-      <Button variant="ghost" size="sm" className="gap-2">
-        <Languages className="h-4 w-4" />
-        <span className="hidden sm:inline">English</span>
-      </Button>
-    );
-  }
 
   return (
     <Button variant="ghost" size="sm" className="gap-2" onClick={handleLanguageToggle}>

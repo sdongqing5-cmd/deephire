@@ -77,6 +77,8 @@ class Job(Base):
     # 招聘信息
     openings = Column(Integer, default=1)  # 招聘人数
     is_urgent = Column(Boolean, default=False, index=True)  # 是否加急
+    is_third_party_headhunter_enabled = Column(Boolean, default=False, index=True)  # 是否开放第三方猎头
+    interview_flow_config = Column(Text)  # 面试工作流配置（JSON）
     valid_until = Column(DateTime(timezone=True))  # 有效期
 
     # 负责人

@@ -67,6 +67,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - ./backend/logs:/app/logs
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,6 +89,7 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
+      - ./frontend/logs:/app/logs
       - /app/node_modules
       - /app/.next
     depends_on:

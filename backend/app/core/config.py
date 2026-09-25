@@ -50,6 +50,14 @@ class Settings(BaseSettings):
     # Environment
     ENVIRONMENT: str = "development"
 
+    # Logging
+    LOG_DIR: str = "logs"
+    LOG_LEVEL: str = "INFO"
+    LOG_ROTATION: str = "100 MB"
+    LOG_RETENTION: str = "30 days"
+    AUDIT_LOG_RETENTION_DAYS: int = 365
+    ALERT_WEBHOOK_URL: str = ""
+
     @property
     def is_production(self) -> bool:
         return self.ENVIRONMENT == "production"

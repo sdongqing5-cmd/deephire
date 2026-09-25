@@ -1,7 +1,7 @@
 """Add V2 models - Application, InterviewerScreening, Assessment
 
 Revision ID: 002_add_v2_models
-Revises: 001_initial_migration
+Revises: 001
 Create Date: 2026-05-31
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = '002_add_v2_models'
-down_revision = '001_initial_migration'
+down_revision = '001'
 branch_labels = None
 depends_on = None
 

@@ -35,6 +35,8 @@ class JobService:
             salary_max=job_data.salary_max,
             openings=job_data.openings,
             is_urgent=job_data.is_urgent,
+            is_third_party_headhunter_enabled=job_data.is_third_party_headhunter_enabled,
+            interview_flow_config=job_data.interview_flow_config,
             valid_until=job_data.valid_until,
             hiring_manager_id=job_data.hiring_manager_id,
             department_manager_id=job_data.department_manager_id,

@@ -9,6 +9,9 @@ from app.models.interview import Interview, InterviewType, InterviewStatus, Inte
 from app.models.application import Application, ApplicationStatus, ApplicationStatusHistory
 from app.models.interviewer_screening import InterviewerScreening
 from app.models.assessment import Assessment, AssessmentStatus
+from app.models.notification import NotificationTemplate, MailboxConfig, NotificationLog
+from app.models.headhunter import HeadhunterRecommendation
+from app.models.audit_log import AuditLog
 
 __all__ = [
     "User",
@@ -31,4 +34,9 @@ __all__ = [
     "InterviewerScreening",
     "Assessment",
     "AssessmentStatus",
+    "NotificationTemplate",
+    "MailboxConfig",
+    "NotificationLog",
+    "HeadhunterRecommendation",
+    "AuditLog",
 ]

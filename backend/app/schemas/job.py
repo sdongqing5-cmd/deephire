@@ -22,6 +22,8 @@ class JobBase(BaseModel):
     salary_max: Optional[int] = Field(None, description="最高薪资")
     openings: int = Field(default=1, description="招聘人数")
     is_urgent: bool = Field(default=False, description="是否加急")
+    is_third_party_headhunter_enabled: bool = Field(default=False, description="是否开启第三方猎头")
+    interview_flow_config: Optional[str] = Field(None, description="面试工作流配置JSON")
     valid_until: Optional[datetime] = Field(None, description="职位有效期")
     hiring_manager_id: str = Field(..., description="招聘负责人ID")
     department_manager_id: Optional[str] = Field(None, description="部门负责人ID")
@@ -48,6 +50,8 @@ class JobUpdate(BaseModel):
     salary_max: Optional[int] = None
     openings: Optional[int] = None
     is_urgent: Optional[bool] = None
+    is_third_party_headhunter_enabled: Optional[bool] = None
+    interview_flow_config: Optional[str] = None
     valid_until: Optional[datetime] = None
     hiring_manager_id: Optional[str] = None
     department_manager_id: Optional[str] = None
@@ -79,6 +83,8 @@ class JobListItem(BaseModel):
     status: JobStatus
     openings: int
     is_urgent: bool
+    is_third_party_headhunter_enabled: bool
+    interview_flow_config: Optional[str]
     application_count: int
     created_at: datetime
 

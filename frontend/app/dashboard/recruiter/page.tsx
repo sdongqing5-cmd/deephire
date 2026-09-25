@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
-import { useRouter } from 'next/navigation';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,7 +11,7 @@ import { RecommendDialog } from '@/components/recruiter/recommend-dialog';
 import { CommunicationDialog } from '@/components/recruiter/communication-dialog';
 import { mockClients } from '@/lib/mock/clients';
 import { mockClientJobs, type ClientJob } from '@/lib/mock/client-jobs';
-import { mockRecommendations, getRecommendationStats, getRecommendationsByClient, type Recommendation } from '@/lib/mock/recommendations';
+import { mockRecommendations, getRecommendationStats, type Recommendation } from '@/lib/mock/recommendations';
 import { mockCandidates } from '@/lib/mock/candidates';
 import {
   Building2,
@@ -29,7 +28,6 @@ import {
 
 export default function RecruiterDashboardPage() {
   const t = useTranslations();
-  const router = useRouter();
   const [selectedClientId, setSelectedClientId] = useState(mockClients[0].id);
   const [recommendDialogOpen, setRecommendDialogOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<ClientJob | null>(null);

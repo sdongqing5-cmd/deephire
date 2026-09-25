@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { MainLayout } from '@/components/layout/main-layout';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -140,6 +141,7 @@ export default function JobsPage() {
   );
 
   return (
+    <MainLayout requiredPath="/jobs">
     <div className="p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
@@ -323,5 +325,6 @@ export default function JobsPage() {
         </div>
       )}
     </div>
+    </MainLayout>
   );
 }

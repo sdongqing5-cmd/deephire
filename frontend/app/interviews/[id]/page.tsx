@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, XCircle, Star } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, XCircle, Star, CirclePause } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -71,8 +71,10 @@ const typeLabels: Record<string, string> = {
   final: '终面',
 };
 
-export default function InterviewDetailPage({ params }: { params: { id: string } }) {
+export default function InterviewDetailPage() {
   const router = useRouter();
+  const params = useParams<{ id: string }>();
+  const interviewId = params.id;
   const [interview, setInterview] = useState<InterviewDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [evaluationDialogOpen, setEvaluationDialogOpen] = useState(false);
@@ -82,30 +84,39 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
     feedback: '',
   });
 
-  useEffect(() => {
-    fetchInterview();
-  }, [params.id]);
-
-  const fetchInterview = async () => {
+  const fetchInterview = useCallback(async () => {
     try {
+      if (!interviewId) {
+        setInterview(null);
+        return;
+      }
+
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/interview-management/${params.id}`
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/interview-management/${interviewId}`
       );
       if (response.ok) {
         const result = await response.json();
         setInterview(result.data);
+      } else {
+        setInterview(null);
       }
     } catch (error) {
       console.error('Failed to fetch interview:', error);
+      setInterview(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [interviewId]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchInterview();
+  }, [fetchInterview]);
 
   const handleSubmitEvaluation = async () => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/interview-management/${params.id}/evaluate`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/interview-management/${interviewId}/evaluate`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -120,7 +131,7 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
       } else {
         alert('评价提交失败');
       }
-    } catch (error) {
+    } catch {
       alert('评价提交失败');
     }
   };
@@ -131,7 +142,7 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
 
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/interview-management/${params.id}/cancel?reason=${encodeURIComponent(reason)}`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/interview-management/${interviewId}/cancel?reason=${encodeURIComponent(reason)}`,
         { method: 'POST' }
       );
 
@@ -141,7 +152,7 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
       } else {
         alert('取消失败');
       }
-    } catch (error) {
+    } catch {
       alert('取消失败');
     }
   };
@@ -180,20 +191,20 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
             返回
           </Button>
 
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-start gap-3">
                 <h1 className="text-3xl font-bold text-gray-900">
                   {interview.candidate.name} - {interview.job.title}
                 </h1>
-                <Badge variant="outline">
+                <Badge variant="outline" className="shrink-0 whitespace-nowrap">
                   {typeLabels[interview.interview.interview_type]}
                 </Badge>
-                <Badge variant="default">
+                <Badge variant="default" className="shrink-0 whitespace-nowrap">
                   {statusLabels[interview.interview.status]}
                 </Badge>
               </div>
-              <div className="flex items-center gap-4 text-gray-600">
+              <div className="flex flex-wrap items-center gap-4 text-gray-600">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4" />
                   <span>
@@ -213,7 +224,7 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2 xl:justify-end">
               {interview.interview.status === 'scheduled' && (
                 <>
                   <Dialog open={evaluationDialogOpen} onOpenChange={setEvaluationDialogOpen}>
@@ -251,6 +262,15 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
                             >
                               <XCircle className="h-4 w-4 mr-2" />
                               淘汰
+                            </Button>
+                            <Button
+                              type="button"
+                              variant={evaluationForm.result === 'hold' ? 'secondary' : 'outline'}
+                              onClick={() => setEvaluationForm({ ...evaluationForm, result: 'hold' })}
+                              className="flex-1"
+                            >
+                              <CirclePause className="h-4 w-4 mr-2" />
+                              待定
                             </Button>
                           </div>
                         </div>
@@ -359,8 +379,24 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
               <h2 className="text-lg font-semibold mb-4">面试信息</h2>
               <div className="space-y-3 text-sm">
                 <div>
+                  <span className="text-gray-600">面试阶段：</span>
+                  <span>{typeLabels[interview.interview.interview_type]}</span>
+                </div>
+                <div>
                   <span className="text-gray-600">面试官：</span>
                   <span>{interview.interview.interviewer_name}</span>
+                </div>
+                <div>
+                  <span className="text-gray-600">面试时间：</span>
+                  <span>
+                    {new Date(interview.interview.scheduled_at).toLocaleString('zh-CN', {
+                      year: 'numeric',
+                      month: 'numeric',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
                 </div>
                 {interview.interview.location && (
                   <div className="flex items-start gap-2">
@@ -375,9 +411,9 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
                       href={interview.interview.meeting_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:underline"
+                      className="break-all text-blue-600 hover:underline"
                     >
-                      点击加入
+                      {interview.interview.meeting_link}
                     </a>
                   </div>
                 )}
@@ -441,10 +477,6 @@ export default function InterviewDetailPage({ params }: { params: { id: string }
                 <div>
                   <span className="text-gray-600">类别：</span>
                   <span className="ml-2">{interview.job.category}</span>
-                </div>
-                <div>
-                  <span className="text-gray-600">应聘状态：</span>
-                  <Badge className="ml-2">{interview.application_status}</Badge>
                 </div>
               </div>
             </Card>

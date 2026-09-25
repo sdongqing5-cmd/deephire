@@ -22,10 +22,11 @@ class ApplicationStatus(str, enum.Enum):
 
     # ==================== 面试官筛选阶段 ====================
     SENT_TO_INTERVIEWER = "sent_to_interviewer"           # 推送给面试官（面试官筛选简历）
+    INTERVIEWER_HOLD = "interviewer_hold"                  # 面试官待定
     INTERVIEWER_REJECTED = "interviewer_rejected"          # 面试官淘汰
 
     # ==================== 面试意向沟通阶段 ====================
-    INTERVIEW_INTENTION_COMMUNICATION = "interview_intention_communication"  # 面试意向沟通中
+    INTERVIEW_INTENTION_COMMUNICATION = "interview_intention_communication"  # 待约面试
     CANDIDATE_DECLINED_INTERVIEW = "candidate_declined_interview"            # 候选人放弃面试
 
     # ==================== 面试时间确认阶段 ====================
@@ -34,6 +35,7 @@ class ApplicationStatus(str, enum.Enum):
     # ==================== 部门面试阶段 ====================
     DEPARTMENT_INTERVIEW_SCHEDULED = "department_interview_scheduled"  # 部门面试已安排
     DEPARTMENT_INTERVIEWING = "department_interviewing"                # 部门面试进行中
+    DEPARTMENT_INTERVIEW_HOLD = "department_interview_hold"            # 部门面试待定
     DEPARTMENT_INTERVIEW_COMPLETED = "department_interview_completed"  # 部门面试已完成
     DEPARTMENT_INTERVIEW_REJECTED = "department_interview_rejected"    # 部门面试淘汰
 
@@ -56,13 +58,14 @@ class ApplicationStatus(str, enum.Enum):
     FINAL_INTERVIEW_REJECTED = "final_interview_rejected"    # 终面淘汰
 
     # ==================== Offer阶段 ====================
-    SALARY_NEGOTIATION = "salary_negotiation"              # 谈薪中
-    SALARY_REJECTED = "salary_rejected"                    # 谈薪失败
+    SALARY_NEGOTIATION = "salary_negotiation"              # 旧状态：待发Offer
+    SALARY_REJECTED = "salary_rejected"                    # 旧状态：Offer没谈拢
     VERBAL_OFFER_ACCEPTED = "verbal_offer_accepted"        # 接受口头Offer
     OFFER_APPROVAL = "offer_approval"                      # Offer审批中
     OFFER_APPROVAL_REJECTED = "offer_approval_rejected"    # Offer审批拒绝
     OFFER_PENDING = "offer_pending"                        # 待发Offer
     OFFER_SENT = "offer_sent"                              # 已发Offer
+    OFFER_NOT_AGREED = "offer_not_agreed"                  # Offer没谈拢
     OFFER_REJECTED = "offer_rejected"                      # 已拒绝Offer
     OFFER_ACCEPTED = "offer_accepted"                      # 已接受Offer
 
@@ -113,6 +116,10 @@ class Application(Base):
     intention_contacted_at = Column(DateTime(timezone=True))  # 沟通时间
     intention_contacted_by = Column(String, ForeignKey("users.id"))  # 沟通人
 
+    # ==================== 评价与淘汰原因 ====================
+    rejection_reason = Column(Text)  # 最近一次淘汰/拒绝/未谈拢原因
+    interviewer_evaluation = Column(Text)  # 面试官查看简历后的候选人评价
+
     # ==================== 🆕 面试时间确认 ====================
     interview_notification_sent_at = Column(DateTime(timezone=True))  # 面试通知发送时间
     interview_confirmed_at = Column(DateTime(timezone=True))  # 候选人确认时间
@@ -121,6 +128,10 @@ class Application(Base):
     # ==================== 面试流程配置 ====================
     interview_flow_config = Column(Text)  # 面试流程配置（JSON格式）
     # 示例：{"has_assessment": true, "has_hr_reinterview": false}
+
+    # ==================== Offer / 入职补充信息 ====================
+    offer_details = Column(Text)  # Offer信息（JSON）
+    onboarding_attachments = Column(Text)  # 入职附件（JSON数组）
 
     # ==================== 时间戳 ====================
     applied_at = Column(DateTime(timezone=True), server_default=func.now())  # 投递时间

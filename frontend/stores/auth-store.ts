@@ -1,10 +1,10 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { User } from '@/types/user';
-import { mockUsers } from '@/lib/mock/users';
 
 interface AuthState {
   user: User | null;
+  token: string | null;
   isAuthenticated: boolean;
   hasHydrated: boolean;
   setHasHydrated: (hasHydrated: boolean) => void;
@@ -12,10 +12,25 @@ interface AuthState {
   logout: () => void;
 }
 
+interface LoginApiResponse {
+  access_token: string;
+  token_type: string;
+  user: {
+    id: string;
+    email: string;
+    name: string;
+    role: User['role'];
+  };
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:9000';
+const AUTH_STORAGE_KEY = 'auth-session-storage';
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
+      token: null,
       isAuthenticated: false,
       hasHydrated: false,
 
@@ -23,28 +38,48 @@ export const useAuthStore = create<AuthState>()(
         set({ hasHydrated });
       },
 
-      login: async (email: string) => {
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
+      login: async (email: string, password: string) => {
+        const response = await fetch(`${API_URL}/api/v1/auth/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
 
-        // Find user in mock data
-        const user = mockUsers.find((u) => u.email === email);
+        const payload = (await response.json().catch(() => null)) as LoginApiResponse | { detail?: string } | null;
 
-        if (!user) {
-          throw new Error('Invalid email or password');
+        if (!response.ok || !payload || !('access_token' in payload)) {
+          const detail =
+            payload && 'detail' in payload && typeof payload.detail === 'string'
+              ? payload.detail
+              : 'Invalid email or password';
+          throw new Error(detail);
         }
 
-        // In a real app, we would verify the password
-        // For now, any password works with the correct email
-        set({ user, isAuthenticated: true });
+        const now = new Date().toISOString();
+        const user: User = {
+          ...payload.user,
+          avatar: undefined,
+          createdAt: now,
+          updatedAt: now,
+        };
+
+        set({ user, token: payload.access_token, isAuthenticated: true });
       },
 
       logout: () => {
-        set({ user: null, isAuthenticated: false });
+        set({ user: null, token: null, isAuthenticated: false });
       },
     }),
     {
-      name: 'auth-storage',
+      name: AUTH_STORAGE_KEY,
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

@@ -122,8 +122,7 @@ async def pass_application(
         ApplicationStatus.HR_INTERVIEW_COMPLETED: ApplicationStatus.SENT_TO_INTERVIEWER,
         ApplicationStatus.INTERVIEW_TIME_CONFIRMING: ApplicationStatus.DEPARTMENT_INTERVIEW_SCHEDULED,
         ApplicationStatus.DEPARTMENT_INTERVIEW_COMPLETED: ApplicationStatus.FINAL_INTERVIEW_SCHEDULED,
-        ApplicationStatus.FINAL_INTERVIEW_COMPLETED: ApplicationStatus.SALARY_NEGOTIATION,
-        ApplicationStatus.SALARY_NEGOTIATION: ApplicationStatus.OFFER_PENDING,
+        ApplicationStatus.FINAL_INTERVIEW_COMPLETED: ApplicationStatus.OFFER_PENDING,
         ApplicationStatus.VERBAL_OFFER_ACCEPTED: ApplicationStatus.OFFER_PENDING,
         ApplicationStatus.OFFER_SENT: ApplicationStatus.OFFER_ACCEPTED,
         ApplicationStatus.OFFER_ACCEPTED: ApplicationStatus.PENDING_ONBOARD,
@@ -200,6 +199,8 @@ async def reject_application(
         ApplicationStatus.FINAL_INTERVIEW_SCHEDULED: ApplicationStatus.FINAL_INTERVIEW_REJECTED,
         ApplicationStatus.FINAL_INTERVIEWING: ApplicationStatus.FINAL_INTERVIEW_REJECTED,
         ApplicationStatus.FINAL_INTERVIEW_COMPLETED: ApplicationStatus.FINAL_INTERVIEW_REJECTED,
+        ApplicationStatus.OFFER_PENDING: ApplicationStatus.OFFER_NOT_AGREED,
+        ApplicationStatus.OFFER_SENT: ApplicationStatus.OFFER_NOT_AGREED,
     }
 
     reject_status = reject_status_map.get(current_status)

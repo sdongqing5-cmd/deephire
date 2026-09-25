@@ -45,6 +45,22 @@ class ApplicationService:
         # 更新状态
         old_status = application.status
         application.status = to_status
+        if to_status in {
+            ApplicationStatus.HR_REJECTED,
+            ApplicationStatus.INTERVIEWER_REJECTED,
+            ApplicationStatus.CANDIDATE_DECLINED_INTERVIEW,
+            ApplicationStatus.DEPARTMENT_INTERVIEW_REJECTED,
+            ApplicationStatus.ASSESSMENT_FAILED,
+            ApplicationStatus.HR_REINTERVIEW_REJECTED,
+            ApplicationStatus.FINAL_INTERVIEW_REJECTED,
+            ApplicationStatus.SALARY_REJECTED,
+            ApplicationStatus.OFFER_APPROVAL_REJECTED,
+            ApplicationStatus.OFFER_NOT_AGREED,
+            ApplicationStatus.OFFER_REJECTED,
+            ApplicationStatus.ONBOARD_CANCELLED,
+            ApplicationStatus.CANDIDATE_WITHDRAWN,
+        }:
+            application.rejection_reason = reason
         application.last_status_change_at = datetime.now()
         db.commit()
         db.refresh(application)

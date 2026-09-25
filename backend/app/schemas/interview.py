@@ -15,6 +15,7 @@ class InterviewCreate(BaseModel):
     interviewer_name: str
     interview_type: InterviewType
     title: Optional[str] = None
+    scorecard_template_id: Optional[str] = None
     scheduled_at: datetime
     duration: int = 60  # 默认60分钟
     location: Optional[str] = None
@@ -26,6 +27,7 @@ class InterviewUpdate(BaseModel):
     interviewer_id: Optional[str] = None
     interviewer_name: Optional[str] = None
     title: Optional[str] = None
+    scorecard_template_id: Optional[str] = None
     scheduled_at: Optional[datetime] = None
     duration: Optional[int] = None
     location: Optional[str] = None
@@ -49,6 +51,7 @@ class InterviewResponse(BaseModel):
     title: Optional[str]
     interviewer_id: str
     interviewer_name: str
+    scorecard_template_id: Optional[str]
     scheduled_at: datetime
     duration: int
     location: Optional[str]

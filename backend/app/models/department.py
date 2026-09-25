@@ -36,5 +36,17 @@ class Department(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    employees = relationship(
+        "User",
+        foreign_keys="User.department_id",
+        back_populates="department",
+    )
+    manager = relationship(
+        "User",
+        foreign_keys=[manager_id],
+        back_populates="managed_department",
+        uselist=False,
+    )
+
     def __repr__(self):
         return f"<Department(id={self.id}, name={self.name}, level={self.level})>"

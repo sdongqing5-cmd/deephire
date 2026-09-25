@@ -129,7 +129,7 @@ export default function LoginPage() {
             <p>{t('auth.hr')}: hr@deephire.com</p>
             <p>{t('auth.recruiter')}: recruiter@deephire.com</p>
             <p>{t('auth.interviewer')}: interviewer@deephire.com</p>
-            <p className="mt-2 text-blue-600">{t('auth.password')}: password123</p>
+            <p className="mt-2 text-blue-600">{t('auth.password')}: password</p>
           </div>
         </div>
       </div>

@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { Search, Trash2, Upload, Users } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ArrowLeft, Search, Trash2, Upload, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,6 +24,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { MainLayout } from '@/components/layout/main-layout';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,9 +46,7 @@ interface ApplicationItem {
     email?: string;
     current_company?: string;
     current_title?: string;
-    years_of_experience?: number;
     location?: string;
-    tags?: string[];
   };
   job: {
     id: string;
@@ -68,21 +67,38 @@ const statusGroups = [
   { value: 'new', label: 'HR待查看' },
   { value: 'sent_to_interviewer', label: 'HR筛选通过' },
   { value: 'hr_rejected', label: 'HR筛选未通过' },
-  { value: 'interview_intention_communication', label: '面试意向沟通中' },
+  { value: 'interview_intention_communication', label: '待约面试' },
+  { value: 'interviewer_hold', label: '面试官待定' },
   { value: 'interview_time_confirming', label: '候选人同意面试' },
   { value: 'candidate_declined_interview', label: '候选人放弃面试' },
   { value: 'department_interviewing', label: '面试中' },
+  { value: 'department_interview_hold', label: '面试待定' },
   { value: 'department_interview_rejected', label: '面试失败' },
-  { value: 'department_interview_completed', label: '面试通过' },
+  { value: 'department_interview_completed', label: '部门面试通过' },
   { value: 'onboarded', label: '已入职' },
 ];
 
+const viewToStatusFilter: Record<string, string> = {
+  'pending-view': 'new',
+};
+
+function getInitialStatusFilter(searchParams: ReturnType<typeof useSearchParams>) {
+  const view = searchParams.get('view');
+  if (view && viewToStatusFilter[view]) {
+    return viewToStatusFilter[view];
+  }
+
+  const status = searchParams.get('status');
+  return status || 'all';
+}
+
 export default function CandidatesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>(() => getInitialStatusFilter(searchParams));
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [jobs, setJobs] = useState<JobOption[]>([]);
 
@@ -198,10 +214,19 @@ export default function CandidatesPage() {
   };
 
   return (
+    <MainLayout requiredPath="/candidates">
     <div className="p-8">
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/dashboard')}
+            className="mb-4 -ml-2 gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            返回首页
+          </Button>
           <h1 className="text-3xl font-bold text-gray-900">候选人管理</h1>
           <p className="text-gray-600 mt-2">管理简历解析结果、筛选流程和面试推进</p>
         </div>
@@ -365,12 +390,6 @@ export default function CandidatesPage() {
                         <span>{application.candidate.current_company}</span>
                       </>
                     )}
-                    {application.candidate.years_of_experience && (
-                      <>
-                        <span>•</span>
-                        <span>{application.candidate.years_of_experience} 年经验</span>
-                      </>
-                    )}
                     {application.candidate.location && (
                       <>
                         <span>•</span>
@@ -395,15 +414,6 @@ export default function CandidatesPage() {
                     </span>
                   </div>
 
-                  {application.candidate.tags && application.candidate.tags.length > 0 && (
-                    <div className="flex gap-2 mt-3">
-                      {application.candidate.tags.map((tag, index) => (
-                        <Badge key={index} variant="outline">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                   <Button variant="outline" onClick={() => router.push(`/candidates/${application.id}`)}>
@@ -438,5 +448,6 @@ export default function CandidatesPage() {
         </div>
       )}
     </div>
+    </MainLayout>
   );
 }

@@ -16,6 +16,7 @@ class ApplicationStateMachine:
 
         ApplicationStatus.HR_SCREENING: [
             ApplicationStatus.HR_INTERVIEW_SCHEDULED,  # HR筛选通过，安排HR初筛面试
+            ApplicationStatus.DEPARTMENT_INTERVIEW_SCHEDULED,  # 允许无HR初筛时直接安排部门面试
             ApplicationStatus.HR_REJECTED,
             ApplicationStatus.CANDIDATE_WITHDRAWN,
         ],
@@ -41,6 +42,13 @@ class ApplicationStateMachine:
         # 面试官筛选阶段
         ApplicationStatus.SENT_TO_INTERVIEWER: [
             ApplicationStatus.INTERVIEW_INTENTION_COMMUNICATION,  # 面试官筛选通过
+            ApplicationStatus.INTERVIEWER_HOLD,
+            ApplicationStatus.INTERVIEWER_REJECTED,
+            ApplicationStatus.CANDIDATE_WITHDRAWN,
+        ],
+
+        ApplicationStatus.INTERVIEWER_HOLD: [
+            ApplicationStatus.INTERVIEW_INTENTION_COMMUNICATION,
             ApplicationStatus.INTERVIEWER_REJECTED,
             ApplicationStatus.CANDIDATE_WITHDRAWN,
         ],
@@ -66,6 +74,13 @@ class ApplicationStateMachine:
 
         ApplicationStatus.DEPARTMENT_INTERVIEWING: [
             ApplicationStatus.DEPARTMENT_INTERVIEW_COMPLETED,
+            ApplicationStatus.DEPARTMENT_INTERVIEW_HOLD,
+            ApplicationStatus.DEPARTMENT_INTERVIEW_REJECTED,
+            ApplicationStatus.CANDIDATE_WITHDRAWN,
+        ],
+
+        ApplicationStatus.DEPARTMENT_INTERVIEW_HOLD: [
+            ApplicationStatus.DEPARTMENT_INTERVIEW_COMPLETED,
             ApplicationStatus.DEPARTMENT_INTERVIEW_REJECTED,
             ApplicationStatus.CANDIDATE_WITHDRAWN,
         ],
@@ -74,6 +89,7 @@ class ApplicationStateMachine:
             ApplicationStatus.ASSESSMENT_INVITED,  # 可选：进入测评
             ApplicationStatus.HR_REINTERVIEW_SCHEDULED,  # 可选：进入HR复试
             ApplicationStatus.FINAL_INTERVIEW_SCHEDULED,  # 直接进入终面
+            ApplicationStatus.OFFER_PENDING,  # 面试通过后直接进入待发Offer
             ApplicationStatus.DEPARTMENT_INTERVIEW_REJECTED,
         ],
 
@@ -92,6 +108,7 @@ class ApplicationStateMachine:
         ApplicationStatus.ASSESSMENT_COMPLETED: [
             ApplicationStatus.HR_REINTERVIEW_SCHEDULED,  # 可选：进入HR复试
             ApplicationStatus.FINAL_INTERVIEW_SCHEDULED,  # 直接进入终面
+            ApplicationStatus.OFFER_PENDING,
         ],
 
         # HR复试阶段（可选）
@@ -109,6 +126,7 @@ class ApplicationStateMachine:
 
         ApplicationStatus.HR_REINTERVIEW_COMPLETED: [
             ApplicationStatus.FINAL_INTERVIEW_SCHEDULED,
+            ApplicationStatus.OFFER_PENDING,
             ApplicationStatus.HR_REINTERVIEW_REJECTED,
         ],
 
@@ -126,7 +144,7 @@ class ApplicationStateMachine:
         ],
 
         ApplicationStatus.FINAL_INTERVIEW_COMPLETED: [
-            ApplicationStatus.SALARY_NEGOTIATION,
+            ApplicationStatus.OFFER_PENDING,
             ApplicationStatus.FINAL_INTERVIEW_REJECTED,
         ],
 
@@ -139,19 +157,25 @@ class ApplicationStateMachine:
 
         ApplicationStatus.VERBAL_OFFER_ACCEPTED: [
             ApplicationStatus.OFFER_APPROVAL,
+            ApplicationStatus.OFFER_PENDING,
+            ApplicationStatus.OFFER_NOT_AGREED,
         ],
 
         ApplicationStatus.OFFER_APPROVAL: [
             ApplicationStatus.OFFER_PENDING,
             ApplicationStatus.OFFER_APPROVAL_REJECTED,
+            ApplicationStatus.OFFER_NOT_AGREED,
         ],
 
         ApplicationStatus.OFFER_PENDING: [
+            ApplicationStatus.OFFER_APPROVAL,
             ApplicationStatus.OFFER_SENT,
+            ApplicationStatus.OFFER_NOT_AGREED,
         ],
 
         ApplicationStatus.OFFER_SENT: [
             ApplicationStatus.OFFER_ACCEPTED,
+            ApplicationStatus.OFFER_NOT_AGREED,
             ApplicationStatus.OFFER_REJECTED,
         ],
 
@@ -189,13 +213,15 @@ class ApplicationStateMachine:
             ApplicationStatus.HR_INTERVIEW_COMPLETED: "HR初筛面试已完成",
             ApplicationStatus.HR_INTERVIEW_REJECTED: "HR初筛面试淘汰",
             ApplicationStatus.SENT_TO_INTERVIEWER: "HR筛选通过，已推送用人部门",
+            ApplicationStatus.INTERVIEWER_HOLD: "面试官待定",
             ApplicationStatus.INTERVIEWER_REJECTED: "面试官筛选未通过",
-            ApplicationStatus.INTERVIEW_INTENTION_COMMUNICATION: "面试意向沟通中",
+            ApplicationStatus.INTERVIEW_INTENTION_COMMUNICATION: "待约面试",
             ApplicationStatus.CANDIDATE_DECLINED_INTERVIEW: "候选人放弃面试",
             ApplicationStatus.INTERVIEW_TIME_CONFIRMING: "候选人同意面试，约定时间中",
             ApplicationStatus.DEPARTMENT_INTERVIEW_SCHEDULED: "已约定面试时间",
             ApplicationStatus.DEPARTMENT_INTERVIEWING: "面试中",
-            ApplicationStatus.DEPARTMENT_INTERVIEW_COMPLETED: "面试通过",
+            ApplicationStatus.DEPARTMENT_INTERVIEW_HOLD: "面试待定",
+            ApplicationStatus.DEPARTMENT_INTERVIEW_COMPLETED: "部门面试通过",
             ApplicationStatus.DEPARTMENT_INTERVIEW_REJECTED: "面试失败",
             ApplicationStatus.ASSESSMENT_INVITED: "测评邀请已发送",
             ApplicationStatus.ASSESSMENT_IN_PROGRESS: "测评进行中",
@@ -209,13 +235,14 @@ class ApplicationStateMachine:
             ApplicationStatus.FINAL_INTERVIEWING: "终面进行中",
             ApplicationStatus.FINAL_INTERVIEW_COMPLETED: "终面已完成",
             ApplicationStatus.FINAL_INTERVIEW_REJECTED: "终面淘汰",
-            ApplicationStatus.SALARY_NEGOTIATION: "谈薪中",
-            ApplicationStatus.SALARY_REJECTED: "谈薪失败",
+            ApplicationStatus.SALARY_NEGOTIATION: "待发Offer",
+            ApplicationStatus.SALARY_REJECTED: "Offer没谈拢",
             ApplicationStatus.VERBAL_OFFER_ACCEPTED: "接受口头Offer",
             ApplicationStatus.OFFER_APPROVAL: "Offer审批中",
             ApplicationStatus.OFFER_APPROVAL_REJECTED: "Offer审批拒绝",
             ApplicationStatus.OFFER_PENDING: "待发Offer",
             ApplicationStatus.OFFER_SENT: "已发Offer",
+            ApplicationStatus.OFFER_NOT_AGREED: "Offer没谈拢",
             ApplicationStatus.OFFER_REJECTED: "已拒绝Offer",
             ApplicationStatus.OFFER_ACCEPTED: "已接受Offer",
             ApplicationStatus.PENDING_ONBOARD: "待入职",

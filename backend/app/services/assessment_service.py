@@ -150,7 +150,7 @@ class AssessmentService:
         await ApplicationService.transition_status(
             db=db,
             application_id=assessment.application_id,
-            to_status=ApplicationStatus.ASSESSMENT_REJECTED,
+            to_status=ApplicationStatus.ASSESSMENT_FAILED,
             operator_id=hr_id,
             operator_name=hr_name,
             reason=f"测评未通过：{reason}"

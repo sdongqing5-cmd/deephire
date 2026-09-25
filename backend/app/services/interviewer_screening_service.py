@@ -51,7 +51,7 @@ class InterviewerScreeningService:
         await ApplicationService.transition_status(
             db=db,
             application_id=application_id,
-            to_status=ApplicationStatus.PUSHED_TO_INTERVIEWER,
+            to_status=ApplicationStatus.SENT_TO_INTERVIEWER,
             operator_id=hr_id,
             operator_name=hr_name,
             reason=f"推送给面试官 {interviewer_name} 筛选"
@@ -100,7 +100,7 @@ class InterviewerScreeningService:
             await ApplicationService.transition_status(
                 db=db,
                 application_id=screening.application_id,
-                to_status=ApplicationStatus.INTERVIEWER_SCREENING_PASSED,
+                to_status=ApplicationStatus.INTERVIEW_INTENTION_COMMUNICATION,
                 operator_id=interviewer_id,
                 operator_name=interviewer_name,
                 reason="面试官筛选通过"
@@ -109,7 +109,7 @@ class InterviewerScreeningService:
             await ApplicationService.transition_status(
                 db=db,
                 application_id=screening.application_id,
-                to_status=ApplicationStatus.INTERVIEWER_SCREENING_REJECTED,
+                to_status=ApplicationStatus.INTERVIEWER_REJECTED,
                 operator_id=interviewer_id,
                 operator_name=interviewer_name,
                 reason="面试官筛选未通过"

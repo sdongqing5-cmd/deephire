@@ -406,11 +406,26 @@ python sync_opensearch.py
 
 ## 监控与日志
 
+### 日志目录与格式
+
+后端和前端日志分开保存，均为一行一条 JSON：
+
+- `backend/logs/app.log`：INFO 及以上应用/请求日志
+- `backend/logs/error.log`：ERROR 及以上日志，包含异常堆栈
+- `frontend/logs/app.log`：浏览器端上报的普通日志
+- `frontend/logs/error.log`：浏览器未捕获异常和 Promise 异常
+
+后端请求日志包含 `request_id`、`user_id`、`user_email`、HTTP 方法、路径、状态码、耗时、客户端 IP 和用户代理。客户端可通过 `X-Request-ID` 传入请求 ID，否则由服务端自动生成。
+
+日志文件按 100 MB 滚动并保留 30 天；审计数据库记录默认保留 365 天，可通过 `.env` 中的 `LOG_*` 和 `AUDIT_LOG_RETENTION_DAYS` 调整。
+配置 `ALERT_WEBHOOK_URL` 后，后端 5xx 请求会向该 Webhook 发送告警；未配置时仍会写入 `error.log`，不会影响请求处理。
+
 ### 查看日志
 
 ```bash
 # 后端日志
 tail -f backend/logs/app.log
+tail -f backend/logs/error.log
 
 # Docker 日志
 docker-compose logs -f backend
@@ -419,6 +434,29 @@ docker-compose logs -f frontend
 # 前端日志
 cd frontend
 npm run dev 2>&1 | tee logs/frontend.log
+```
+
+### 审计日志
+
+首次启用前执行数据库迁移：
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+执行迁移后，所有 POST/PUT/PATCH/DELETE 请求会写入 `audit_logs` 表，包含登录、登出、数据增删改和失败请求。HR 用户可以通过以下接口查询、筛选和导出：
+
+```bash
+GET /api/v1/audit-logs?page=1&page_size=50&action=post
+GET /api/v1/audit-logs/export?start_at=2026-01-01T00:00:00Z
+```
+
+定期执行数据库保留清理：
+
+```bash
+cd backend
+python scripts/purge_audit_logs.py
 ```
 
 ### 性能监控

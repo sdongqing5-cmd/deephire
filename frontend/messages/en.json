@@ -27,8 +27,15 @@
   },
   "jobs": {
     "seniorFrontendEngineer": "Senior Frontend Engineer",
+    "seniorBackendEngineer": "Senior Backend Engineer",
+    "robotAgentEngineer": "Robot Agent Engineer",
+    "algorithmEngineer": "Algorithm Engineer",
+    "frontendEngineer": "Frontend Engineer",
     "backendEngineer": "Backend Engineer",
-    "productManager": "Product Manager"
+    "productManager": "Product Manager",
+    "cloudArchitect": "Cloud Platform Architect",
+    "devopsEngineer": "DevOps Engineer",
+    "dataAnalyst": "Data Analyst"
   },
   "interviewTypes": {
     "phone-screen": "Phone Screen",
@@ -65,12 +72,14 @@
     "demoAccounts": "Demo accounts:",
     "hr": "HR",
     "recruiter": "Recruiter",
-    "interviewer": "Interviewer"
+    "interviewer": "Interviewer",
+    "platformAdmin": "Platform Admin"
   },
   "roles": {
     "hr": "HR",
     "recruiter": "Recruiter",
     "interviewer": "Interviewer",
+    "platformAdmin": "Platform Admin",
     "admin": "Admin",
     "headhunter": "Headhunter"
   },
@@ -79,9 +88,14 @@
     "positions": "Positions",
     "candidates": "Candidates",
     "interviews": "Interviews",
+    "offers": "Offers",
+    "onboarding": "Onboarding",
+    "notifications": "Notifications",
+    "headhunterManagement": "Headhunter Management",
     "schedule": "Schedule",
     "evaluations": "Evaluations",
-    "search": "Search"
+    "search": "Search",
+    "platformAdmin": "Platform Admin"
   },
   "dashboard": {
     "hrDashboard": "HR Dashboard",
@@ -94,7 +108,7 @@
     "totalCandidates": "Total Candidates",
     "activeJobs": "Active Jobs",
     "interviewsToday": "Interviews Today",
-    "pendingReviews": "Pending Reviews",
+    "pendingReviews": "Pending View",
     "myCandidates": "My Candidates",
     "interviewsScheduled": "Interviews Scheduled",
     "pendingActions": "Pending Actions",
@@ -107,7 +121,44 @@
     "scheduleInterview": "Schedule Interview",
     "recentActivities": "Recent Activities",
     "noInterviewsToday": "No interviews scheduled for today",
-    "noInterviewsDescription": "You're all caught up! Check back later or schedule a new interview."
+    "noInterviewsDescription": "You're all caught up! Check back later or schedule a new interview.",
+    "interviewerWorkspace": {
+      "title": "Interviewer Workspace",
+      "description": "Start with the overview, then open the screening workbench. Approved resumes move to intention communication; rejected resumes are sent back to HR.",
+      "candidatesTitle": "Candidates",
+      "candidatesDescription": "Review resumes sent by HR and submit your screening decision.",
+      "pendingResumes": "Pending Resumes",
+      "instructions": "Instructions",
+      "instructionsBody": "Open the original resume in the screening workbench, then click Pass or Reject to send your decision back to HR.",
+      "pendingCount": "Pending {count}",
+      "pendingSection": "Pending ({count})",
+      "screenedSection": "Screened ({count})",
+      "candidateEvaluation": "Candidate Evaluation",
+      "evaluationLabel": "Evaluation",
+      "evaluationPlaceholder": "Enter your evaluation of this candidate",
+      "cancel": "Cancel",
+      "saving": "Saving...",
+      "saveEvaluation": "Save Evaluation",
+      "noPendingResumes": "No candidates pending screening",
+      "noPendingResumesHint": "Candidates sent by HR will appear here.",
+      "noScreenedResumes": "No screened candidates",
+      "noScreenedResumesHint": "Candidates will appear here after screening is completed.",
+      "passScreening": "Pass",
+      "rejectScreening": "Reject",
+      "loading": "Loading...",
+      "noHrResumes": "No resumes from HR yet",
+      "noHrResumesHint": "Candidates sent by HR will appear here.",
+      "appliedJob": "Applied Position: {title}",
+      "positionUnknown": "Position unknown",
+      "yearsExperienceText": "{years} years experience",
+      "viewResume": "View Resume",
+      "actionFailedWithDetail": "Action failed: {detail}",
+      "actionFailedRetry": "Action failed. Please try again later.",
+      "unknownError": "Unknown error",
+      "statusSentToInterviewer": "Pending Screening",
+      "statusInterviewIntentionCommunication": "Intention Communication",
+      "statusInterviewerRejected": "Rejected by Interviewer"
+    }
   },
   "headhunter": {
     "clients": "Clients",

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
@@ -34,17 +35,47 @@ export default function HRDashboardPage() {
     : 'en';
   const dateLocale = currentLocale === 'zh' ? zhCN : enUS;
 
-  // Calculate statistics from mock data
-  const totalCandidates = mockCandidates.length;
-  const activeJobs = mockJobs.filter(job => job.status === 'open').length;
+  const [totalCandidates, setTotalCandidates] = useState(0);
+  const [activeJobs, setActiveJobs] = useState(0);
+  const [pendingReviews, setPendingReviews] = useState(0);
+
+  useEffect(() => {
+    const fetchDashboardStats = async () => {
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const [jobsResponse, applicationsResponse, pendingResponse] = await Promise.all([
+          fetch(`${apiUrl}/api/v1/jobs?status=recruiting&limit=100`),
+          fetch(`${apiUrl}/api/v1/applications?page=1&page_size=1`),
+          fetch(`${apiUrl}/api/v1/applications?status=new&page=1&page_size=1`),
+        ]);
+
+        if (jobsResponse.ok) {
+          const jobs = await jobsResponse.json();
+          setActiveJobs(Array.isArray(jobs) ? jobs.length : 0);
+        }
+
+        if (applicationsResponse.ok) {
+          const result = await applicationsResponse.json();
+          setTotalCandidates(result.data?.total || 0);
+        }
+
+        if (pendingResponse.ok) {
+          const result = await pendingResponse.json();
+          setPendingReviews(result.data?.total || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch HR dashboard stats:', error);
+      }
+    };
+
+    fetchDashboardStats();
+  }, []);
+
   const todayInterviews = mockInterviews.filter(interview => {
     const interviewDate = new Date(interview.scheduledAt);
     const today = new Date();
     return interviewDate.toDateString() === today.toDateString();
   }).length;
-  const pendingReviews = mockCandidates.filter(
-    candidate => candidate.status === 'screening' || candidate.status === 'interviewing'
-  ).length;
 
   // Get today's interviews
   const todaysInterviewsList = mockInterviews
@@ -155,7 +186,7 @@ export default function HRDashboardPage() {
 
           <Card
             className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1"
-            onClick={() => router.push('/candidates?status=screening,interviewing')}
+            onClick={() => router.push('/candidates?view=pending-view')}
           >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
@@ -262,7 +293,7 @@ export default function HRDashboardPage() {
                   const job = mockJobs.find(j => j.id === activity.jobId);
 
                   // Generate translated title and description
-                  let title = t(`activities.${activity.type}`);
+                  const title = t(`activities.${activity.type}`);
                   let description = '';
 
                   switch (activity.type) {

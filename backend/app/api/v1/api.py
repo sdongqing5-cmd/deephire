@@ -21,6 +21,9 @@ from app.api.v1.endpoints import (
     assessments,
     final_interviews,
     offers,
+    notifications,
+    headhunters,
+    audit_logs,
 )
 
 api_router = APIRouter()
@@ -45,3 +48,6 @@ api_router.include_router(department_interviews.router, prefix="/department-inte
 api_router.include_router(assessments.router, prefix="/assessments", tags=["assessments"])
 api_router.include_router(final_interviews.router, prefix="/final-interviews", tags=["final-interviews"])
 api_router.include_router(offers.router, prefix="/offers", tags=["offers"])
+api_router.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+api_router.include_router(headhunters.router, prefix="/headhunters", tags=["headhunters"])
+api_router.include_router(audit_logs.router, prefix="/audit-logs", tags=["audit-logs"])

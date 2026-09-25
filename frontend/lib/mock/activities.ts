@@ -9,7 +9,7 @@ export const mockActivities: Activity[] = [
     jobId: '1',
     title: 'New candidate added',
     description: 'Alex Zhang applied for Senior Frontend Engineer',
-    timestamp: '2024-03-01T00:00:00Z',
+    timestamp: '2026-09-24T09:00:00+08:00',
   },
   {
     id: '2',
@@ -20,7 +20,7 @@ export const mockActivities: Activity[] = [
     interviewId: '2',
     title: 'Interview scheduled',
     description: 'Behavioral interview scheduled with Alex Zhang',
-    timestamp: '2024-03-10T00:00:00Z',
+    timestamp: '2026-09-23T10:30:00+08:00',
   },
   {
     id: '3',
@@ -31,7 +31,7 @@ export const mockActivities: Activity[] = [
     interviewId: '2',
     title: 'Interview completed',
     description: 'Behavioral interview completed for Alex Zhang',
-    timestamp: '2024-03-18T11:00:00Z',
+    timestamp: '2026-09-22T11:00:00+08:00',
   },
   {
     id: '4',
@@ -41,7 +41,7 @@ export const mockActivities: Activity[] = [
     jobId: '1',
     title: 'Status updated',
     description: 'Alex Zhang moved to interviewing stage',
-    timestamp: '2024-03-15T00:00:00Z',
+    timestamp: '2026-09-21T14:00:00+08:00',
   },
   {
     id: '5',
@@ -51,7 +51,7 @@ export const mockActivities: Activity[] = [
     jobId: '2',
     title: 'New candidate added',
     description: 'Lisa Chen applied for Backend Engineer',
-    timestamp: '2024-03-05T00:00:00Z',
+    timestamp: '2026-09-20T09:30:00+08:00',
   },
   {
     id: '6',
@@ -62,7 +62,7 @@ export const mockActivities: Activity[] = [
     interviewId: '3',
     title: 'Interview scheduled',
     description: 'Phone screen scheduled with Lisa Chen',
-    timestamp: '2024-03-16T00:00:00Z',
+    timestamp: '2026-09-19T15:00:00+08:00',
   },
   {
     id: '7',
@@ -71,7 +71,7 @@ export const mockActivities: Activity[] = [
     jobId: '1',
     title: 'New job posted',
     description: 'Senior Frontend Engineer position opened',
-    timestamp: '2024-02-01T00:00:00Z',
+    timestamp: '2026-09-18T08:00:00+08:00',
   },
   {
     id: '8',
@@ -82,7 +82,7 @@ export const mockActivities: Activity[] = [
     interviewId: '4',
     title: 'Interview cancelled',
     description: 'Technical interview cancelled for David Liu',
-    timestamp: '2024-03-17T00:00:00Z',
+    timestamp: '2026-09-17T16:30:00+08:00',
   },
   {
     id: '9',
@@ -92,7 +92,7 @@ export const mockActivities: Activity[] = [
     jobId: '3',
     title: 'Offer sent',
     description: 'Job offer sent to Sarah Wang',
-    timestamp: '2024-03-16T00:00:00Z',
+    timestamp: '2026-09-16T10:00:00+08:00',
   },
   {
     id: '10',
@@ -103,6 +103,6 @@ export const mockActivities: Activity[] = [
     interviewId: '5',
     title: 'Interview completed',
     description: 'Technical interview completed for Sarah Wang',
-    timestamp: '2024-03-15T18:00:00Z',
+    timestamp: '2026-09-15T18:00:00+08:00',
   },
 ];

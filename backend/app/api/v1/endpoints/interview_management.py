@@ -6,8 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.models.interview import Interview, InterviewType, InterviewStatus
+from app.models.interview import Interview, InterviewType, InterviewStatus, InterviewResult
 from app.services.interview_service import InterviewService
+from pydantic import BaseModel
+
 from app.schemas.interview import (
     InterviewCreate,
     InterviewUpdate,
@@ -17,6 +19,14 @@ from app.schemas.interview import (
 )
 
 router = APIRouter()
+
+
+class InterviewBatchRequest(BaseModel):
+    interview_ids: List[str]
+
+
+class UrgeInterviewRequest(InterviewBatchRequest):
+    target: str = "candidate"
 
 
 # TODO: 替换为真实的用户认证
@@ -40,7 +50,15 @@ async def create_interview(
     - **scheduled_at**: 面试时间
     - **duration**: 面试时长（分钟）
     """
-    interview = InterviewService.create(db, interview_data)
+    try:
+        interview = await InterviewService.schedule_with_status_update(
+            db=db,
+            interview_data=interview_data,
+            operator_id=current_user["id"],
+            operator_name=current_user["name"],
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return interview
 
 
@@ -52,6 +70,7 @@ async def list_interviews(
     candidate_id: Optional[str] = Query(None, description="候选人ID过滤"),
     job_id: Optional[str] = Query(None, description="职位ID过滤"),
     status: Optional[str] = Query(None, description="状态过滤"),
+    result: Optional[str] = Query(None, description="结果过滤"),
     interview_type: Optional[str] = Query(None, description="面试类型过滤"),
     date_from: Optional[datetime] = Query(None, description="开始日期"),
     date_to: Optional[datetime] = Query(None, description="结束日期"),
@@ -64,6 +83,7 @@ async def list_interviews(
     """
     # 转换枚举
     status_enum = InterviewStatus(status) if status else None
+    result_enum = InterviewResult(result) if result else None
     type_enum = InterviewType(interview_type) if interview_type else None
 
     interviews = InterviewService.list_interviews(
@@ -74,6 +94,7 @@ async def list_interviews(
         candidate_id=candidate_id,
         job_id=job_id,
         status=status_enum,
+        result=result_enum,
         interview_type=type_enum,
         date_from=date_from,
         date_to=date_to,
@@ -179,7 +200,13 @@ async def submit_evaluation(
     - **score**: 评分（1-10）
     - **feedback**: 面试反馈
     """
-    interview = InterviewService.submit_evaluation(db, interview_id, evaluation)
+    interview = await InterviewService.submit_evaluation(
+        db,
+        interview_id,
+        evaluation,
+        operator_id=current_user["id"],
+        operator_name=current_user["name"],
+    )
 
     if not interview:
         raise HTTPException(status_code=404, detail="面试不存在")
@@ -240,5 +267,62 @@ async def cancel_interview(
         "data": {
             "interview_id": interview.id,
             "status": interview.status.value,
+        }
+    }
+
+
+@router.post("/{interview_id}/candidate-reply", summary="候选人确认或拒绝面试")
+async def candidate_reply(
+    interview_id: str,
+    accepted: bool = Query(..., description="是否参加面试"),
+    db: Session = Depends(get_db),
+):
+    """候选人点击参加/不参加面试通知后的状态回写。"""
+    interview = InterviewService.mark_candidate_reply(db, interview_id, accepted)
+
+    if not interview:
+        raise HTTPException(status_code=404, detail="面试不存在")
+
+    return {
+        "code": 0,
+        "message": "候选人答复已记录",
+        "data": {
+            "interview_id": interview.id,
+            "status": interview.status.value,
+        }
+    }
+
+
+@router.post("/batch-notify", summary="批量通知面试双方")
+async def batch_notify(
+    request: InterviewBatchRequest,
+    db: Session = Depends(get_db),
+):
+    """批量标记面试通知已发送给候选人和面试官。"""
+    notified_ids = InterviewService.send_notifications(db, request.interview_ids)
+    return {
+        "code": 0,
+        "message": "通知已发送",
+        "data": {
+            "interview_ids": notified_ids,
+        }
+    }
+
+
+@router.post("/batch-urge", summary="批量催促答复或反馈")
+async def batch_urge(
+    request: UrgeInterviewRequest,
+    db: Session = Depends(get_db),
+):
+    """批量催促候选人答复或面试官反馈。"""
+    if request.target not in {"candidate", "interviewer"}:
+        raise HTTPException(status_code=400, detail="target 必须为 candidate 或 interviewer")
+
+    urged_ids = InterviewService.urge_reply(db, request.interview_ids, request.target)
+    return {
+        "code": 0,
+        "message": "催促已发送",
+        "data": {
+            "interview_ids": urged_ids,
         }
     }

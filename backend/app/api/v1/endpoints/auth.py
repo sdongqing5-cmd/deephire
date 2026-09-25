@@ -7,6 +7,7 @@ from pydantic import BaseModel, EmailStr
 from app.db.database import get_db
 from app.models import User
 from app.core.security import verify_password, create_access_token
+from app.core.logging import bind_user_context, logger
 
 router = APIRouter()
 
@@ -23,6 +24,11 @@ class UserResponse(BaseModel):
     email: str
     name: str
     role: str
+    department_id: str | None = None
+    title: str | None = None
+    manager_id: str | None = None
+    employee_no: str | None = None
+    status: str
 
 
 class LoginResponse(BaseModel):
@@ -43,6 +49,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == request.email).first()
 
     if not user:
+        logger.warning("login failed: unknown user", email=str(request.email))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
@@ -50,6 +57,7 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 
     # Verify password
     if not verify_password(request.password, user.hashed_password):
+        logger.warning("login failed: invalid password", email=str(request.email))
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials",
@@ -59,6 +67,8 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     access_token = create_access_token(
         data={"sub": user.email, "user_id": user.id, "role": user.role.value}
     )
+    bind_user_context(user.id, user.email)
+    logger.info("login succeeded", role=user.role.value)
 
     return LoginResponse(
         access_token=access_token,
@@ -68,6 +78,11 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             email=user.email,
             name=user.name,
             role=user.role.value,
+            department_id=user.department_id,
+            title=user.title,
+            manager_id=user.manager_id,
+            employee_no=user.employee_no,
+            status=user.status,
         ),
     )
 
@@ -75,5 +90,5 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 @router.post("/logout")
 async def logout():
     """User logout endpoint"""
+    logger.info("logout requested")
     return {"message": "Logged out successfully"}
-

@@ -42,6 +42,13 @@ def seed_users(db: Session):
             hashed_password=get_password_hash("password"),
             role=UserRole.INTERVIEWER,
         ),
+        User(
+            id="platform-admin-1",
+            email="admin@deephire.com",
+            name="DeepHire 平台管理员",
+            hashed_password=get_password_hash("password"),
+            role=UserRole.PLATFORM_ADMIN,
+        ),
     ]
 
     for user in users:
@@ -173,6 +180,16 @@ def seed_departments(db: Session):
     db.commit()
     print(f"✓ Seeded {len(departments)} departments")
 
+    # Link demo users to the organization after departments exist.
+    org_fields = {
+        "hr@deephire.com": {"department_id": "dept_tech", "title": "HR Manager", "employee_no": "EMP-001"},
+        "recruiter@deephire.com": {"department_id": "dept_tech", "title": "Recruiter", "employee_no": "EMP-002"},
+        "interviewer@deephire.com": {"department_id": "dept_tech", "title": "Interviewer", "employee_no": "EMP-003"},
+    }
+    for email, fields in org_fields.items():
+        db.query(User).filter(User.email == email).update(fields, synchronize_session=False)
+    db.commit()
+
 
 def seed_jobs(db: Session):
     """Seed demo jobs"""
@@ -246,7 +263,7 @@ def seed_applications(db: Session):
             id="app_2",
             job_id="2",
             candidate_id="2",
-            status=ApplicationStatus.HR_SCREENING,
+            status=ApplicationStatus.HR_INTERVIEW_SCHEDULED,
             recruiter_id="2",
         ),
     ]
